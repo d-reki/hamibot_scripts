@@ -470,4 +470,24 @@ function isScreenOff() {
 // 综合判断方案
 function isActuallyLocked() {
     return isDeviceLocked() || isScreenOff()
-}
+};
+/*** hamibot 配置
+[
+  {
+    "name": "select_tasks",
+    "type": "checkbox",
+    "label": "任务选择",
+    "options": {
+      "task_video_a": "激励视频任务",
+      "task_video_all": "所有视频任务"
+    },
+    "help": "选择需要执行的任务"
+  },
+  {
+    "name": "unlock_pwd",
+    "type": "text",
+    "label": "锁屏密码",
+    "help": "向上滑动解锁,可为空"
+  }
+]
+***/ 

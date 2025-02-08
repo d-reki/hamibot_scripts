@@ -427,3 +427,17 @@ function jsTime(text_obj) {
     };
 };
 main()
+/*** hamibot 配置
+[
+  {
+    "name": "select_tasks",
+    "type": "checkbox",
+    "label": "任务选择",
+    "options": {
+      "task_a": "看短剧",
+      "task_b": "日常福利"
+    },
+    "help": "选择需要执行的任务"
+  }
+]
+***/ 
