@@ -8,7 +8,7 @@ const max_execution_count = 5; // 主程序最大执行次数
 const default_width = 1080;  // 默认屏幕宽度
 const default_height = 1920;  // 默认屏幕高度
 const { unlock_pwd } = hamibot.env; // 屏幕密码
-const { select_tasks } = hamibot.env; // 屏幕任务状态
+const { select_tasks } = hamibot.env; // 执行任务
 const screen_width = getDeviceWidth()  // 屏幕宽度
 const screen_height = getDeviceHeight();  // 屏幕高度
 console.log("=====================");
@@ -86,7 +86,7 @@ function closeStartupWindow(){
     clickElementParent(textContains("跳过").findOne(1000));
     // clickElementParent(id("button_text_id").findOne(500));
     // 弹窗1
-    if (textContains("青少年模式")){
+    if (textContains("青少年模式").findOne(500)){
         clickElementParent(text("我知道了").findOne(500));
     };
     // 弹窗2
@@ -131,7 +131,7 @@ function executeWelfareTask() {
 };
 // 观看视频
 function watchVideos() {
-    // 点击一下左上角起点白泽,防止其他弹窗弹出
+    // 点击一下左上角起点白泽,防止其他弹窗弹出影响看视频
     clickElementCenter(className("android.widget.Image").clickable(true).boundsInside(0,0,screen_width /2 ,screen_height/4).findOne(500));
     // 获取所选任务,判断是否只执行激励任务
     let watch_flag = null;
@@ -148,14 +148,6 @@ function watchVideos() {
                 };
                 console.log("=====================");
             };
-            // 无法获取到“看视频抽奖机会”节点
-            // if (text("看视频得抽奖机会").findOne(1000)){
-            //     swipeTargetElement("看视频得抽奖机会",true);
-            //     clickElementParent(textStartsWith("看视频抽奖机会").findOne(1000));
-            //     console.log("=====================");
-            //     watch_flag = waitAdVideo();
-            //     console.log("=====================");
-            // };
         } else {
             console.log("开始执行激励视频任务");
             swipeTargetElement("激励视频任务",false);
