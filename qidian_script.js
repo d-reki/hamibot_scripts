@@ -83,16 +83,16 @@ function startApp(app_name) {
 // 关闭启动任务前的弹窗(不一定有用)
 function closeStartupWindow(){
     // 跳过开屏广告
-    clickElementParent(textContains("跳过").findOne(1000));
-    // clickElementParent(id("button_text_id").findOne(500));
+    clickElementLoop(textContains("跳过").findOne(1000));
+    // clickElementLoop(id("button_text_id").findOne(500));
     // 弹窗1
     if (textContains("青少年模式").findOne(500)){
-        clickElementParent(text("我知道了").findOne(500));
+        clickElementLoop(text("我知道了").findOne(500));
     };
     // 弹窗2
-    clickElementParent(id("imgClose").findOne(500));
+    clickElementLoop(id("imgClose").findOne(500));
     // 通知弹窗
-    clickElementParent(id("systemNotificationBottomDialogClose").findOne(500));
+    clickElementLoop(id("systemNotificationBottomDialogClose").findOne(500));
 };
 // 执行起点福利任务
 function executeWelfareTask() {
@@ -101,13 +101,13 @@ function executeWelfareTask() {
     if (text("领福利").findOne(1000)){
         clickElementCenter(text("领福利").findOne(1000));
     } else {
-        clickElementParent(text("我").findOne(1000));
+        clickElementLoop(text("我").findOne(1000));
     };
     let flzx = text("福利中心").findOne(1000);
     // 判断是否在福利中心页面
     if (flzx || text("激励视频任务").findOne(1000)) {
         if (flzx){clickElementCenter(flzx);}
-        // clickElementParent(textContains("跳过").findOne(1000));
+        // clickElementLoop(textContains("跳过").findOne(1000));
         if (text("激励视频任务").findOne(1000)) {
             // 保持屏幕常亮 10 分钟,防止做任务重息屏
             device.keepScreenOn(60 * 1000 * 10);
@@ -120,11 +120,11 @@ function executeWelfareTask() {
             // 关闭屏幕常亮
             device.cancelKeepingAwake();
         } else {
-            console.log(`未找到视频任务, 第${execution_count}尝试重启任务或自行前往视频任务页面`);
+            console.log(`未找到视频任务, 第${main_execution_count}尝试重启任务或自行前往视频任务页面`);
             retryMain();
         };
     } else {
-        console.log(`未找到福利中心, 第${execution_count}尝试重启任务或自行前往视频任务页面`);
+        console.log(`未找到福利中心, 第${main_execution_count}尝试重启任务或自行前往视频任务页面`);
         retryMain();
     };
     sleep(3000);
@@ -283,7 +283,7 @@ function getJlVideoXy(){
     };
 };
 // 递归点击父元素函数
-function clickElementParent(element) {
+function clickElementLoop(element) {
     try {
         // 如果元素为空，直接返回false
         if (!element){return false;}
@@ -297,7 +297,7 @@ function clickElementParent(element) {
             return false;
         }
         // 递归点击父元素
-        return clickElementParent(parent_element);
+        return clickElementLoop(parent_element);
     } catch (e) {
         console.error("点击元素出错:", e);
         return false;
