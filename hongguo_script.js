@@ -1,3 +1,11 @@
+/*** 
+    脚本名称：hongguo_script.js
+    功能描述：
+    作    者：reki
+    创建日期：
+    备注：
+***/
+
 // 引入必要的模块和设置
 auto.waitFor();
 const screen_width = device.width;  // 屏幕宽度

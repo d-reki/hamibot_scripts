@@ -1,10 +1,19 @@
+/*** 
+    脚本名称：qidian_script.js
+    功能描述：用于qidian视频任务
+    作    者：reki
+    创建日期：2026-03-11
+    备注：
+***/
+
 // 无障碍启动
 startAuto();
 // 引入必要的模块和设置
 let view_video_total = 0; // 统计观看视频数量
+let loop_stop_total = 0; // 循环停止次数
 let us_execution_count = 0; // 解锁屏幕执行次数
 let main_execution_count = 0; // 主程序执行次数
-const ad_time = 16; // 默认等待16s广告
+const ad_time = 15; // 默认等待15s广告
 const max_execution_count = 5; // 主程序最大执行次数
 const default_width = 1080;  // 默认屏幕宽度
 const default_height = 1920;  // 默认屏幕高度
@@ -14,9 +23,9 @@ const screen_width = getDeviceWidth()  // 屏幕宽度
 const screen_height = getDeviceHeight();  // 屏幕高度
 console.log("=====================");
 console.log(`获取屏幕宽度:${screen_width},高度:${screen_height}`)
+console.setSize(screen_width /2, screen_height / 2);
+console.setPosition(0, screen_height / 8);
 console.show();
-console.setSize(screen_width /2, screen_height / 3);
-console.setPosition(0, 0);
 // 主程序
 main();
 // 主程序入口	
@@ -100,16 +109,16 @@ function executeWelfareTask() {
     console.log("=====================");
     console.log("开始进入福利中心");
     if (text("领福利").findOne(50)){
-        clickElementCenter(text("领福利").findOne(500));
+        clickElementCenter(text("领福利").findOne(500),true);
     } else {
-        clickElementLoop(text("我").findOne(500));
+        clickElementLoop(text("我").findOne(500),true);
     };
-    let flzx = text("福利中心").findOne(1000);
+    let flzx = text("福利中心").findOne(2000);
     // 判断是否在福利中心页面
-    if (flzx || text("激励任务").findOne(1000)) {
-        if (flzx){clickElementCenter(flzx);}
+    if (flzx || text("激励任务").findOne(2000)) {
+        if (flzx){clickElementCenter(flzx,true);}
         // clickElementLoop(textContains("跳过").findOne(1000));
-        if (text("激励任务").findOne(1000)) {
+        if (text("激励任务").findOne(2000)) {
             // 保持屏幕常亮 10 分钟,防止做任务重息屏
             device.keepScreenOn(60 * 1000 * 10);
             let start_time = new Date();
@@ -133,18 +142,18 @@ function executeWelfareTask() {
 // 观看视频
 function watchVideos() {
     // 点击一下左上角起点白泽,防止其他弹窗弹出影响看视频
-    clickElementCenter(className("android.widget.Image").clickable(true).boundsInside(0,0,screen_width /2 ,screen_height/4).findOne(500));
+    clickElementCenter(className("android.widget.Image").clickable(true).boundsInside(0,0,screen_width /2 ,screen_height/4).findOne(500),true);
     // 获取所选任务,判断是否只执行激励任务
     let watch_flag = null;
     console.log("开始执行所有视频任务");
     while (text("去完成").findOnce()) {
        // 只要激励任务里面找到4个已领取就算完成视频任务
-       if (get_task_flag(4)){
-         console.log("视频任务检测已全部完成");
+       if (getTaskFlag(4)){
+         console.log("视频任务已全部完成");
          console.log("=====================");
          return
        } else {
-         console.log("视频任务检测未全部完成");
+         console.log("视频任务未全部完成");
          console.log("=====================");
        }
       swipeTargetElement("去完成",true);
@@ -166,14 +175,15 @@ function waitAdVideo() {
         console.log("请先绑定手机号,再执行任务");
         return 2;
     };
-    let close_btn_ad = className("android.view.ViewGroup").depth(12).drawingOrder(1).boundsInside(0, screen_height * 3 / 4, screen_width, screen_height).findOne(500);
-    if (close_btn_ad){
-        clickElementCenter(close_btn_ad);
-    };
-    console.log(`等待广告:${ad_time}秒`);
-    sleep(ad_time*1000);
+    // 优化广告观看逻辑，先关闭广告 -> 跳转广告
+    sleep(1000);
+    clickElementClose(); // 关闭广告
+    sleep(1000);
+    continueWatchAd(); // 跳转广告
+  	console.log(`等待广告:${ad_time}秒`);
+  	sleep(ad_time*1000);
     // 返回退出
-    clickElementClose();
+    closeWatchAd();
     if (textContains("领奖上限").findOne(500)) {
         console.log("当前设备已超过领奖上限,退出");
         watch_flag = 2;
@@ -183,33 +193,45 @@ function waitAdVideo() {
         watch_flag = 2;
     };
     while (!text("激励任务").findOne(3000) && error_total < 5){
-        let stop_time = parseInt(random(1,2));
-        if (text("福利中心").findOne(500)){
+        let stop_time = parseInt(random(2,3));
+      	let flzx = text("福利中心").findOne(1000);
+        if (flzx){
             console.log(`检测到未在任务页, 等待${stop_time}s后尝试进入任务`);
             sleep(stop_time * 1000);
-            clickElementCenter(text("福利中心").findOne(500));
+            clickElementCenter(flzx,true);
         } else {
-          	let continue_btn = className("android.view.View").depth(12).drawingOrder(1).boundsInside(0, screen_height * 3 / 4, screen_width, screen_height).findOne(500);
-          	if (continue_btn){
-              	clickElementCenter(continue_btn);
-              	console.log(`广告未完成, 等待${ad_time}s后再退出`);
-              	sleep(ad_time*1000);
+            let continue_ad_btn = continueWatchAd();
+            if (continue_ad_btn){
+                console.log(`广告未完成, 等待广告:${ad_time}秒`);
+  	            sleep(ad_time*1000);
+                closeWatchAd();
             } else {
-                console.log(`任务可能未退出, 等待${stop_time}s后尝试点击退出`);
-                sleep(stop_time * 1000);
-                clickElementClose();
-            };
+                console.log(`广告未完成, 等待重新观看`);
+                waitAdVideo();
+            };  
         };
         error_total++;
     };
     let close_btn_zdl = text("知道了").findOne(1000);
    	if (close_btn_zdl){clickElementCenter(close_btn_zdl)};
     view_video_total++;
+  	loop_stop_total = 0;
     console.log(`结束看广告,已看视频:${view_video_total}个`);
     return watch_flag;
 }; 
+
+// 判断广告是否观看完，未完成的则继续观看
+function continueWatchAd(){
+    let continue_ad_btn = className("android.view.ViewGroup").depth(11).drawingOrder(5).findOne(2000);
+    if (continue_ad_btn){
+        clickElementCenter(continue_ad_btn);
+        return true;
+    };
+    return false;
+};
+
 // 判断任务是否完成
-function get_task_flag(task_num){
+function getTaskFlag(task_num){
   // 判断区域目标内完成数量
   let region = className("android.view.View").depth(15).drawingOrder(0).indexInParent(3).findOne(500);
   if (region) {
@@ -245,7 +267,7 @@ function swipeTargetElement(text_name,is_click){
         } else {
             // 目标在屏幕内，不需要滑动
             console.log("目标已经在屏幕内，无需滑动");
-            if (is_click){clickElementCenter("", center);}
+            if (is_click){clickElementCenter(ele_btn);}
             return;
         };
         while ( (center.center_y < target_y_min || center.center_y > target_y_max) && swipe_count < max_swipes){
@@ -255,7 +277,7 @@ function swipeTargetElement(text_name,is_click){
             center = getCenterXy(ele_btn);
             swipe_count++;
         };
-        if (is_click){clickElementCenter("", center);}
+        if (is_click){clickElementCenter(ele_btn);}
     };
 };
 // 获取随机坐标中心
@@ -302,62 +324,72 @@ function clickElementLoop(element) {
     }
 };
 // 点击元素坐标中心
-function clickElementCenter(element,center) {
+function clickElementCenter(element,is_hide) {
     // 元素节点或者元素位置
     try {
-        if (!center){
-            center = getCenterXy(element);
-            if (!center) {return false;};
-        };
-        console.hide();
+        center = getCenterXy(element);
+        if (!center) {return false;};
         // 隐藏点击,防止控制台遮挡了点击区域
-        sleep(random(1000,2000))
+        if (is_hide){
+            console.hide();
+            sleep(1000)
+        } else {
+            sleep(500)
+        };
         let flag = false;
         if (center.center_x > 0 && center.center_y > 0){
             flag = click(random(center.center_x-2,center.center_x+2), random(center.center_y-2,center.center_y+2));
         };
+      	sleep(500)
         console.show();
-        sleep(random(1000,2000))
         return flag
-        // console.log("已点击坐标");
     } catch (e) {
         console.error("点击坐标中心出错:", e);
-        console.show();
         return false;
     }
 };
 // 点击元素关闭
-function clickElementClose(){
+function clickElementClose() {
+    let try_count = 0;
+    const max_try = 3;
+    let close_flag = false;
+    while (try_count < max_try && !close_flag) {
+        console.log(`开始第${try_count + 1}次尝试获取关闭按钮`)
+        // 右上角关闭按钮
+        let close_btn_close = className("android.view.ViewGroup").boundsInside(screen_width * 2 / 3, 0, screen_width, screen_height / 4).find();
+        if (close_btn_close && close_btn_close.length > 0) {
+            // print("获取关闭按钮1");
+            clickElementCenter(close_btn_close[close_btn_close.length - 1]);
+            close_flag = true;
+            break;
+        };
+        if (!close_flag) {
+            // 内置广告左上角的关闭按钮
+            let inside_close_btn = className("android.widget.ImageView").depth(6).drawingOrder(2).boundsInside(0, 0, screen_width / 2, screen_height / 3).findOne(1000);
+            if (inside_close_btn) {
+                close_flag = true;
+                clickElementCenter(inside_close_btn);
+                break;
+            }
+        };
+        // 等待一段时间让页面有机会刷新
+        sleep(2000);
+        tryCount++;
+    };
+    if (!close_flag) {
+        console.log(`尝试${max_try}次后仍未找到关闭按钮`);
+    };
+}
+// 视频关闭退出
+function closeWatchAd(){
+    // 先回到桌面,可以有效关闭因系统阻挡跳转广告（双应用、允许跳转等）
+    home();
   	startApp("起点读书");
-  	// 强制多次退出，1、退出系统拦截广告，不能退的只能自己手动允许了，需要适配
+  	// 返回尝试关闭
   	back();
-  	back();
-    // 跳过按钮
-    let close_btn_tggg = text("跳过广告").findOne(500);
-    if (close_btn_tggg){
-        clickElementCenter(close_btn_tggg);
-        let close_btn_jxgk = text("继续观看").findOne(500);
-        if (close_btn_jxgk){clickElementCenter(close_btn_jxgk);};
-        return;
-    };
-    let close_btn_gb = text("关闭").findOne(500);
-    if (close_btn_gb){
-        clickElementCenter(close_btn_gb);
-        return;
-    };
-    let close_btn_tg = text("跳过").findOne(500);
-    if (close_btn_tg){
-        clickElementCenter(close_btn_tg);
-        return;
-    };
-    // 右上角关闭按钮
-    let close_btn_10 = className("android.view.ViewGroup").drawingOrder(1).depth(10).boundsInside(screen_width * 2 / 3,0,screen_width,screen_height/4).findOne(500);
-    if (close_btn_10){
-        clickElementCenter(close_btn_10);
-        return
-    };
-  	let close_btn_zdl = text("知道了").findOne(1000);
-  	if (close_btn_zdl){clickElementCenter(close_btn_zdl)};
+  	sleep(1000);
+    // 不成功则点击关闭
+    clickElementClose();
 };
 // 判断是否有数字键盘检测
 function isPwdKeyboardVisible() {
