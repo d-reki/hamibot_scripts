@@ -1,5 +1,13 @@
 ## 基于hamibot + autojs脚本
-1、qidian视频章节任务脚本(v7.9.436) <br>
-    1、修复新增广告跳转问题
-    2、https://hamibot.com/marketplace/GIlyB
-2、红果免费短剧任务脚本(待完成)<br>
+1、qidian视频章节任务脚本<br>
+    版本：
+        qidian v7.9.447
+    功能：
+        1、只做视频任务
+        2、可锁屏密码向上滑动解锁
+    更新日志：
+        1、优化广告跳转问题
+    脚本网址：
+        https://hamibot.com/marketplace/GIlyB
+        
+2、...<br>

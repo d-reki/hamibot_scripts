@@ -1,3 +1,11 @@
+/*** 
+    脚本名称：qidian_script.js
+    功能描述：用于qidian视频任务
+    作    者：reki
+    创建日期：2026-03-11
+    备注：
+***/
+
 // 无障碍启动
 startAuto();
 // 引入必要的模块和设置
@@ -5,7 +13,7 @@ let view_video_total = 0; // 统计观看视频数量
 let loop_stop_total = 0; // 循环停止次数
 let us_execution_count = 0; // 解锁屏幕执行次数
 let main_execution_count = 0; // 主程序执行次数
-const ad_time = 16; // 默认等待16s广告
+const ad_time = 15; // 默认等待15s广告
 const max_execution_count = 5; // 主程序最大执行次数
 const default_width = 1080;  // 默认屏幕宽度
 const default_height = 1920;  // 默认屏幕高度
@@ -141,11 +149,11 @@ function watchVideos() {
     while (text("去完成").findOnce()) {
        // 只要激励任务里面找到4个已领取就算完成视频任务
        if (getTaskFlag(4)){
-         console.log("视频任务检测已全部完成");
+         console.log("视频任务已全部完成");
          console.log("=====================");
          return
        } else {
-         console.log("视频任务检测未全部完成");
+         console.log("视频任务未全部完成");
          console.log("=====================");
        }
       swipeTargetElement("去完成",true);
@@ -167,23 +175,15 @@ function waitAdVideo() {
         console.log("请先绑定手机号,再执行任务");
         return 2;
     };
-  	// 点击跳转广告按钮，倒计时点击的问题，会有多种类型，内置广告 or 跳转广告
-    let jump_ad_btn1 = className("android.view.ViewGroup").depth(12).boundsInside(0, screen_height / 2, screen_width, screen_height).findOne(1000);
-  	if (jump_ad_btn1){
-      	clickElementCenter(jump_ad_btn1);
-    };
-    let jump_ad_btn2 = className("android.view.ViewGroup").depth(12).drawingOrder(4).boundsInside(0, screen_height / 2, screen_width, screen_height).findOne(1000);
-  	if (jump_ad_btn2){
-      	clickElementCenter(jump_ad_btn2);
-    };
-    let jump_ad_btn3 = className("android.view.ViewGroup").depth(13).drawingOrder(3).boundsInside(0, screen_height / 2, screen_width, screen_height).findOne(1000);
-    if (jump_ad_btn3){
-      	clickElementCenter(jump_ad_btn3);
-    };
+    // 优化广告观看逻辑，先关闭广告 -> 跳转广告
+    sleep(1000);
+    clickElementClose(); // 关闭广告
+    sleep(1000);
+    continueWatchAd(); // 跳转广告
   	console.log(`等待广告:${ad_time}秒`);
   	sleep(ad_time*1000);
     // 返回退出
-    clickElementClose();
+    closeWatchAd();
     if (textContains("领奖上限").findOne(500)) {
         console.log("当前设备已超过领奖上限,退出");
         watch_flag = 2;
@@ -200,22 +200,15 @@ function waitAdVideo() {
             sleep(stop_time * 1000);
             clickElementCenter(flzx,true);
         } else {
-            let continue_ad_btn = className("android.view.ViewGroup").depth(11).drawingOrder(5).boundsInside(0, screen_height / 2, screen_width, screen_height).findOne(1000);
+            let continue_ad_btn = continueWatchAd();
             if (continue_ad_btn){
-              	clickElementCenter(continue_ad_btn)
-              	loop_stop_total ++;
-              	if (loop_stop_total < 5){
-                  console.log(`广告未看完, 继续观看`);
-              		waitAdVideo()
-                } else {
-                  console.log(`程序异常, 退出`);
-                  return 2
-                };
+                console.log(`广告未完成, 等待广告:${ad_time}秒`);
+  	            sleep(ad_time*1000);
+                closeWatchAd();
             } else {
-              console.log(`任务可能未退出, 等待${stop_time}s后尝试点击退出`);
-              sleep(stop_time * 1000);
-              clickElementClose();
-            }
+                console.log(`广告未完成, 等待重新观看`);
+                waitAdVideo();
+            };  
         };
         error_total++;
     };
@@ -226,6 +219,16 @@ function waitAdVideo() {
     console.log(`结束看广告,已看视频:${view_video_total}个`);
     return watch_flag;
 }; 
+
+// 判断广告是否观看完，未完成的则继续观看
+function continueWatchAd(){
+    let continue_ad_btn = className("android.view.ViewGroup").depth(11).drawingOrder(5).findOne(2000);
+    if (continue_ad_btn){
+        clickElementCenter(continue_ad_btn);
+        return true;
+    };
+    return false;
+};
 
 // 判断任务是否完成
 function getTaskFlag(task_num){
@@ -346,30 +349,47 @@ function clickElementCenter(element,is_hide) {
     }
 };
 // 点击元素关闭
-function clickElementClose(){
-  	// 先回到桌面,可以有效关闭因系统阻挡跳转广告（双应用、允许跳转等）
-    home()
+function clickElementClose() {
+    let try_count = 0;
+    const max_try = 3;
+    let close_flag = false;
+    while (try_count < max_try && !close_flag) {
+        console.log(`开始第${try_count + 1}次尝试获取关闭按钮`)
+        // 右上角关闭按钮
+        let close_btn_close = className("android.view.ViewGroup").boundsInside(screen_width * 2 / 3, 0, screen_width, screen_height / 4).find();
+        if (close_btn_close && close_btn_close.length > 0) {
+            // print("获取关闭按钮1");
+            clickElementCenter(close_btn_close[close_btn_close.length - 1]);
+            close_flag = true;
+            break;
+        };
+        if (!close_flag) {
+            // 内置广告左上角的关闭按钮
+            let inside_close_btn = className("android.widget.ImageView").depth(6).drawingOrder(2).boundsInside(0, 0, screen_width / 2, screen_height / 3).findOne(1000);
+            if (inside_close_btn) {
+                close_flag = true;
+                clickElementCenter(inside_close_btn);
+                break;
+            }
+        };
+        // 等待一段时间让页面有机会刷新
+        sleep(2000);
+        tryCount++;
+    };
+    if (!close_flag) {
+        console.log(`尝试${max_try}次后仍未找到关闭按钮`);
+    };
+}
+// 视频关闭退出
+function closeWatchAd(){
+    // 先回到桌面,可以有效关闭因系统阻挡跳转广告（双应用、允许跳转等）
+    home();
   	startApp("起点读书");
   	// 返回尝试关闭
   	back();
-  	sleep(2000)
-    // 右上角关闭按钮
-    let close_btn_close = className("android.view.ViewGroup").boundsInside(screen_width * 2 / 3, 0, screen_width, screen_height / 4).find();
-    if (close_btn_close && close_btn_close.length > 0) {
-//       	console.log("开始退出广告");
-        // 获取最后一个节点
-        clickElementCenter(close_btn_close[close_btn_close.length - 1]);
-    };
-  	// 内置广告左上角的关闭按钮
-  	let inside_close_btn = className("android.widget.ImageView").depth(6).drawingOrder(2).boundsInside(0, 0, screen_width / 2, screen_height / 3).findOne(1000);
-  	if (inside_close_btn){
-      	clickElementCenter(inside_close_btn);
-    };
-  // 关闭后广告存在未看完则继续
-    //     let close_btn_tg = className("android.view.View").boundsInside(0, screen_height / 2, screen_width, screen_height).findOne(1000);
-    //     if (close_btn_tg){
-    //       clickElementCenter(close_btn_tg)
-    //     }
+  	sleep(1000);
+    // 不成功则点击关闭
+    clickElementClose();
 };
 // 判断是否有数字键盘检测
 function isPwdKeyboardVisible() {
