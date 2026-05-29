@@ -9,5 +9,3 @@
 ##### 1、修复滑动失效问题，修复无法暂停问题，忽略广告·加点
 
 #### 脚本网址：https://hamibot.com/marketplace/GIlyB
-        
-### 2、...
